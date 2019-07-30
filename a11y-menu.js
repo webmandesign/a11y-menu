@@ -1,7 +1,7 @@
 /**
  * @package      A11y Menu
  * @description  A keyboard accessible navigational menu script.
- * @version      0.0.8
+ * @version      1.0.0
  * @author       WebMan Design, Oliver Juhas, https://www.webmandesign.eu
  * @copyright    2019 WebMan Design, Oliver Juhas
  * @license      GPL-3.0-or-later, https://www.gnu.org/licenses/gpl-3.0-standalone.html
@@ -29,13 +29,13 @@
 				// Set options first.
 				_.setOptions( options );
 
+				// Load required polyfills first (already used in getContainers()).
+				_.polyfill();
+
 				// No point if there is no menu to process.
 				if ( ! _.getContainers().length || ! _.getOption( 'expanded_class' ) ) {
 					return;
 				}
-
-				// Load required polyfills first.
-				_.polyfill();
 
 				// Iterate over each menu.
 				_.getContainers().forEach( ( menu ) => {
@@ -103,13 +103,14 @@
 					parents = _.getParents( event );
 
 				if ( 'focusin' === event.type ) {
-					parents.map( ( node ) => node.classList.add( _.getOption( 'expanded_class' ) ) );
+					parents.map( ( menuItem ) => menuItem.classList.add( _.getOption( 'expanded_class' ) ) );
 				} else {
-					parents.map( ( node ) => node.classList.remove( _.getOption( 'expanded_class' ) ) );
+					parents.map( ( menuItem ) => menuItem.classList.remove( _.getOption( 'expanded_class' ) ) );
 				}
 
 				// Toggle button attributes.
 				_.changeButtonAttributes( event );
+				parents.map( ( menuItem ) => _.changeButtonAttributes( menuItem ) );
 			},
 
 			/**
@@ -165,8 +166,6 @@
 
 					// Toggle button attributes.
 					_.changeButtonAttributes( event );
-
-					// @todo  Try also menuItem.blur()?
 				}
 			},
 
