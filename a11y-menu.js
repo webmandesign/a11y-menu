@@ -1,11 +1,11 @@
 /**
  * @package      A11y Menu
  * @description  A keyboard accessible navigational menu script.
- * @link         https://github.com/webmandesign/A11yMenu
+ * @version      0.0.7
  * @author       WebMan Design, Oliver Juhas, https://www.webmandesign.eu
+ * @copyright    2019 WebMan Design, Oliver Juhas
  * @license      GPL-3.0-or-later, https://www.gnu.org/licenses/gpl-3.0-standalone.html
- * @copyright    WebMan Design, Oliver Juhas
- * @version      0.0.6
+ * @link         https://github.com/webmandesign/A11yMenu
  */
 
 /* global window, document, a11yMenuConfig */
@@ -30,15 +30,18 @@
 				_.setArgs( options );
 
 				// No point if there is no menu to process.
-				if ( ! _.getContainers().length || ! _.getArg( 'expanded-class' ) ) {
+				if ( ! _.getContainers().length || ! _.getArg( 'expanded_class' ) ) {
 					return;
 				}
+
+				// Load required polyfills first.
+				_.polyfill();
 
 				// Iterate over each menu.
 				_.getContainers().forEach( ( menu ) => {
 
 					// Get child menus.
-					const childMenus = menu.querySelectorAll( _.getArg( 'child-menu-selector' ) );
+					const childMenus = menu.querySelectorAll( _.getArg( 'child_menu_selector' ) );
 
 					// No point if there is no child menu in the menu.
 					if ( ! Object.keys( childMenus ).length ) {
@@ -46,7 +49,7 @@
 					}
 
 					// Get child menu toggle button from configured attributes object.
-					const button = _.getButton( _.args[ 'button-attributes' ] );
+					const button = _.getButton( _.getArg( 'button_attributes' ) );
 
 					// Iterate over each child menu in the menu.
 					childMenus.forEach( ( childMenu ) => {
@@ -72,14 +75,14 @@
 					menu.addEventListener( 'focusout', ( event ) => _.onFocus( event ), true );
 
 					// Watch for click/touch event on toggle buttons within the menu.
-					const selectorButton = _.getArg( 'button-selector' );
+					const selectorButton = _.getArg( 'button_selector' );
 					if ( selectorButton ) {
 						menu.querySelectorAll( selectorButton ).forEach( ( button ) => {
 							button.addEventListener( 'mousedown', ( event ) => _.onClick( event ) );
 						} );
 					}
 
-					// Watch for keydown event.
+					// Watch for keydown event (checking for ESC key).
 					document.addEventListener( 'keydown', ( event ) => _.onKeydown( event ) );
 
 				} );
@@ -100,13 +103,9 @@
 					parents = _.getParents( event );
 
 				if ( 'focusin' === event.type ) {
-					parents.map( ( node ) => {
-						node.classList.add( _.getArg( 'expanded-class' ) );
-					} );
+					parents.map( ( node ) => node.classList.add( _.getArg( 'expanded_class' ) ) );
 				} else {
-					parents.map( ( node ) => {
-						node.classList.remove( _.getArg( 'expanded-class' ) );
-					} );
+					parents.map( ( node ) => node.classList.remove( _.getArg( 'expanded_class' ) ) );
 				}
 
 				// Toggle button attributes.
@@ -123,21 +122,18 @@
 			onClick: function( event ) {
 				const
 					_ = this,
-					classExpanded = _.getArg( 'expanded-class' ),
+					classExpanded = _.getArg( 'expanded_class' ),
 					menuItem      = event.target.parentNode,
 					isExpanded    = menuItem.classList.contains( classExpanded );
 
 				// Remove the class from siblings.
 				let siblings = _.getSiblings( menuItem );
-				siblings = siblings.filter( ( sibling ) => sibling.matches( '[aria-haspopup="true"]' ) );
 				siblings.map( ( sibling ) => sibling.classList.remove( classExpanded ) );
 
-				// Toggle the class on parent menu item.
+				// Toggle the class on direct parent menu item only.
 				if ( isExpanded ) {
-					// Sub menu is open. Now close it by removing toggle class.
 					menuItem.classList.remove( classExpanded );
 				} else {
-					// Sub menu is closed. Now open it by adding toggle class.
 					menuItem.classList.add( classExpanded );
 				}
 
@@ -147,13 +143,6 @@
 
 			/**
 			 * Action on touch event on the link within the expandable menu item.
-			 *
-			 * A touch when a child menu is collapsed triggers a focus event
-			 * to expand the child menu.
-			 * A touch when a child menu is expanded, but a different element
-			 * was focused before, collapses the child menu.
-			 * Only a second touch on the same link (which was focused before)
-			 * triggers the original link event.
 			 *
 			 * @param  {Event} event
 			 *
@@ -165,12 +154,19 @@
 					link     = event.target,
 					menuItem = link.parentNode;
 
-				if ( ! menuItem.classList.contains( _.getArg( 'expanded-class' ) ) ) {
+				if ( ! menuItem.classList.contains( _.getArg( 'expanded_class' ) ) ) {
+					// Touched once, child menu is collapsed - expanded child menu (toggle focus).
 					event.preventDefault();
 					link.focus();
 				} else if ( link !== document.activeElement ) {
+					// Touched once, child menu is expanded - collapse child menu.
 					event.preventDefault();
-					menuItem.classList.remove( _.getArg( 'expanded-class' ) );
+					menuItem.classList.remove( _.getArg( 'expanded_class' ) );
+
+					// Toggle button attributes.
+					_.changeButtonAttributes( event );
+
+					// @todo  Try also menuItem.blur()?
 				}
 			},
 
@@ -186,7 +182,7 @@
 				if ( 27 === event.keyCode ) {
 					const
 						_ = this,
-						classExpanded = _.getArg( 'expanded-class' );
+						classExpanded = _.getArg( 'expanded_class' );
 
 					_.getContainers().forEach( ( menu ) => {
 						menu.querySelectorAll( '.' + classExpanded ).forEach( ( menuItem ) => {
@@ -209,10 +205,9 @@
 			getContainers: function() {
 				const
 					_ = this,
-					selector = _.getArg( 'menu-selector' );
+					selector = _.getArg( 'menu_selector' );
 
 				if ( ! _.menus.length && selector ) {
-					// Set the array of menu nodes (containers) to process.
 					document.querySelectorAll( selector ).forEach( ( menu ) => _.menus.push( menu ) );
 				}
 
@@ -220,22 +215,20 @@
 			},
 
 			/**
-			 * Returns an array of sibling nodes.
-			 *
-			 * @link  https://gomakethings.com/how-to-get-an-elements-siblings-with-vanilla-javascript/
+			 * Returns an array of sibling nodes (expandable menu items by default).
 			 *
 			 * @param  {node} node  DOM node to get siblings for.
 			 *
 			 * @return  {Object} Array of nodes, or an empty array.
 			 */
-			getSiblings: function( node ) {
+			getSiblings: function( node, selector = '[aria-haspopup="true"]' ) {
 				let
 					siblings = [],
 					sibling  = node.parentNode.firstChild;
 
 				// Iterate over all siblings, but return only valid nodes.
 				for (; sibling; sibling = sibling.nextSibling ) {
-					if ( 1 !== sibling.nodeType || sibling === node ) {
+					if ( ! sibling.matches( selector ) || node === sibling ) {
 						continue;
 					}
 					siblings.push( sibling );
@@ -257,9 +250,7 @@
 				let parents = [];
 
 				if ( null != eventOrNode.path ) {
-				// Oh great! We have parents set in event.path array.
-
-					// Get the array of event.path.
+					// Oh great! We have parents set in event.path array.
 					parents = eventOrNode.path;
 
 					// We don't need parents outside our menu container.
@@ -275,23 +266,20 @@
 
 					// Finally, remove event.target from the array (first node).
 					parents.shift();
-
 				} else {
-				// Unfortunately, we need to iterate through DOM now.
-
 					// Get the actual current node.
 					let node = ( 1 === eventOrNode.nodeType ) ? ( eventOrNode ) : ( eventOrNode.target );
 
-					// We don't need parents outside our menu container.
+					// Unfortunately, we need to iterate through DOM,
+					// but we don't need parents outside the menu container.
 					const menus = _.getContainers();
 					while ( -1 === menus.indexOf( node ) ) {
 						parents.push( node );
 						node = node.parentNode;
 					}
-
 				}
 
-				// Remove parents we don't need.
+				// Remove parents not matching `selector` function attribute.
 				if ( selector ) {
 					parents = parents.filter( ( parent ) => parent.matches( selector ) );
 				}
@@ -324,26 +312,23 @@
 						'title',
 					];
 
-				// Set `aria-expanded` as it's mandatory button attribute.
+				// Set `aria-expanded` as it's mandatory attribute.
 				button.setAttribute( 'aria-expanded', 'false' );
 
-				// Set only allowed button attributes.
+				// Set allowed attributes only.
 				attrKeys.forEach( ( name ) => {
 					if (
 						-1 !== allowedAtts.indexOf( name )
 						|| 0 === name.indexOf( 'aria-' )
 						|| 0 === name.indexOf( 'data-' )
 					) {
-						// The value is secured by Element.setAttribute() already.
+						// The value is secured by Element.setAttribute() directly.
 						button.setAttribute( name.toLowerCase(), atts[ name ] );
 					}
 				} );
 
-				// We should change the `aria-label` dynamically.
-				if (
-					null != atts['aria-label']
-					&& null != atts['aria-label'].expand
-				) {
+				// Preset dynamic `aria-label` attribute.
+				if ( null != atts['aria-label'] && null != atts['aria-label'].expand ) {
 					button.setAttribute( 'aria-label', atts['aria-label'].expand );
 				}
 
@@ -351,7 +336,7 @@
 			},
 
 			/**
-			 * Modifies button HTML attributes based on the child menu expansion state.
+			 * Modifies the button HTML attributes based on the child menu expansion state.
 			 *
 			 * @param  {Event/node} eventOrNode  An event object or a DOM node of button parent.
 			 *
@@ -365,7 +350,7 @@
 				let button;
 
 				if ( null != menuItem ) {
-					button = menuItem.querySelector( _.getArg( 'button-selector' ) );
+					button = menuItem.querySelector( _.getArg( 'button_selector' ) );
 				}
 
 				// Don't bother if no button.
@@ -374,17 +359,17 @@
 				}
 
 				const
-					isExpanded      = menuItem.classList.contains( _.getArg( 'expanded-class' ) ),
-					buttonLabelAttr = _.getArg( 'button-attributes', 'aria-label' );
+					isExpanded  = menuItem.classList.contains( _.getArg( 'expanded_class' ) ),
+					buttonLabel = _.getArg( 'button_attributes', 'aria-label' );
 
-				// Change `aria-label` content if we should.
-				if ( null != buttonLabelAttr ) {
-					if ( isExpanded && null != buttonLabelAttr.collapse ) {
+				// Change `aria-label` value dynamically, if we should.
+				if ( null != buttonLabel && 'object' === typeof buttonLabel ) {
+					if ( isExpanded && null != buttonLabel.collapse ) {
 						// Sub menu is open, label the button as ready for collapse.
-						button.setAttribute( 'aria-label', buttonLabelAttr.collapse );
-					} else if ( ! isExpanded && null != buttonLabelAttr.expand ) {
+						button.setAttribute( 'aria-label', buttonLabel.collapse );
+					} else if ( ! isExpanded && null != buttonLabel.expand ) {
 						// Sub menu is closed, label the button as ready for expand.
-						button.setAttribute( 'aria-label', buttonLabelAttr.expand );
+						button.setAttribute( 'aria-label', buttonLabel.expand );
 					}
 				}
 
@@ -406,31 +391,31 @@
 					_ = this,
 					args = {
 					// Setting default values.
-						// {Object/empty} Empty value bypasses the toggle button creation.
-						'button-attributes': {
-							// {String} Default toggle button class.
+						// {Object/empty} Empty value bypasses the button creation.
+						'button_attributes': {
+							// {String} Default button class.
 							'class': 'button-toggle-sub-menu',
-							// {Object/String} If object, content dynamically changes. If string, content is static.
+							// {Object/String} If object, attribute value dynamically changes. If string, value is static.
 							'aria-label': {
 								'collapse': 'Collapse child menu',
 								'expand': 'Expand child menu',
 							},
 						},
-						// {String} Toggle button element in the menu to watch. Empty value bypasses the toggle button functionality.
-						'button-selector': 'button[aria-expanded]',
-						// {String} Required. If no child menus, bypass the functionality for specific menu.
-						'child-menu-selector': '.sub-menu',
-						// {String/empty} Empty value bypasses the whole functionality.
-						'expanded-class': 'has-expanded-sub-menu',
-						// {String} Required. If no menus, bypass the whole functionality.
-						'menu-selector': '.toggle-sub-menus',
+						// {String} Button element in the menu to watch. Empty value bypasses the button functionality.
+						'button_selector': 'button[aria-expanded]',
+						// {String} Required. No child menu bypasses the functionality for a specific menu only.
+						'child_menu_selector': '.sub-menu',
+						// {String/empty} Required. Empty value bypasses the whole functionality.
+						'expanded_class': 'has-expanded-sub-menu',
+						// {String} Required. No menu(s) bypasses the whole functionality.
+						'menu_selector': 'nav .menu',
 					};
 
 				// If we have a custom option, override the default value.
 				for ( let id in options ) {
 					if ( args.hasOwnProperty( id ) ) {
 						// Make sure to sanitize a class name.
-						if ( 'expanded-class' === id ) {
+						if ( 'expanded_class' === id ) {
 							args[ id ] = options[ id ].replace( /[^a-zA-Z0-9\-_]/g, '' );
 						} else {
 							args[ id ] = options[ id ];
@@ -448,32 +433,43 @@
 			/**
 			 * Get an argument value.
 			 *
-			 * Returned value will always be a string as that is the only data type
-			 * we support in our options (arguments);
-			 *
 			 * @param  {String} label  Argument label(s). Multiple ones for a nested level(s).
 			 *
-			 * @return  {String} String argument value, or an empty string.
+			 * @return  {Mixed}
 			 */
 			getArg: function() {
-				// Get function arguments as label(s).
-				const label = arguments;
-				let arg = this.args;
+				let value = this.args;
 
-				// Iterate through each level specified with labels provided.
-				for ( let i = 0, max = label.length; i < max; i++ ) {
-					if ( arg.hasOwnProperty( label[ i ] ) ) {
-						// OK, we've got such level. Get its value.
-						arg = arg[ label[ i ] ];
+				// Iterate through each label specified with function arguments.
+				for ( let i = 0, max = arguments.length; i < max; i++ ) {
+					if ( value.hasOwnProperty( arguments[ i ] ) ) {
+						value = value[ arguments[ i ] ];
 					} else {
-						// Such argument label does not exist?
-						// Make sure it won't for subsequent levels either.
-						arg = {};
+						value = false;
 					}
 				}
 
-				// We only return string values or an empty string.
-				return ( 'string' === typeof arg ) ? ( arg ) : ( '' );
+				return value;
+			},
+
+		// Polyfills
+
+			/**
+			 * Polyfills for NodeList.forEach() and Element.matches().
+			 *
+			 * @return  {Void}
+			 */
+			polyfill: function() {
+				// @see  https://developer.mozilla.org/en-US/docs/Web/API/NodeList/forEach#Polyfill
+				if ( window.NodeList && ! NodeList.prototype.forEach ) {
+					NodeList.prototype.forEach = Array.prototype.forEach;
+				}
+
+				// @see  https://developer.mozilla.org/en-US/docs/Web/API/Element/matches#Polyfill
+				if ( ! Element.prototype.matches ) {
+					Element.prototype.matches = Element.prototype.msMatchesSelector ||
+					                            Element.prototype.webkitMatchesSelector;
+				}
 			},
 
 	};
@@ -488,16 +484,3 @@
 	}
 
 } )( window.a11yMenuConfig || {} );
-
-// Polyfill for NodeList.forEach()
-// @see  https://developer.mozilla.org/en-US/docs/Web/API/NodeList/forEach#Polyfill
-if ( window.NodeList && ! NodeList.prototype.forEach ) {
-	NodeList.prototype.forEach = Array.prototype.forEach;
-}
-
-// Polyfill for Element.matches()
-// @see  https://developer.mozilla.org/en-US/docs/Web/API/Element/matches#Polyfill
-if ( ! Element.prototype.matches ) {
-	Element.prototype.matches = Element.prototype.msMatchesSelector ||
-	                            Element.prototype.webkitMatchesSelector;
-}
