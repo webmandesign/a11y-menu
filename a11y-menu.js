@@ -1,7 +1,7 @@
 /**
  * @package      A11y Menu
  * @description  A keyboard accessible navigational menu script.
- * @version      0.0.7
+ * @version      0.0.8
  * @author       WebMan Design, Oliver Juhas, https://www.webmandesign.eu
  * @copyright    2019 WebMan Design, Oliver Juhas
  * @license      GPL-3.0-or-later, https://www.gnu.org/licenses/gpl-3.0-standalone.html
@@ -27,10 +27,10 @@
 				const _ = this;
 
 				// Set options first.
-				_.setArgs( options );
+				_.setOptions( options );
 
 				// No point if there is no menu to process.
-				if ( ! _.getContainers().length || ! _.getArg( 'expanded_class' ) ) {
+				if ( ! _.getContainers().length || ! _.getOption( 'expanded_class' ) ) {
 					return;
 				}
 
@@ -41,7 +41,7 @@
 				_.getContainers().forEach( ( menu ) => {
 
 					// Get child menus.
-					const childMenus = menu.querySelectorAll( _.getArg( 'child_menu_selector' ) );
+					const childMenus = menu.querySelectorAll( _.getOption( 'child_menu_selector' ) );
 
 					// No point if there is no child menu in the menu.
 					if ( ! Object.keys( childMenus ).length ) {
@@ -49,7 +49,7 @@
 					}
 
 					// Get child menu toggle button from configured attributes object.
-					const button = _.getButton( _.getArg( 'button_attributes' ) );
+					const button = _.getButton( _.getOption( 'button_attributes' ) );
 
 					// Iterate over each child menu in the menu.
 					childMenus.forEach( ( childMenu ) => {
@@ -75,7 +75,7 @@
 					menu.addEventListener( 'focusout', ( event ) => _.onFocus( event ), true );
 
 					// Watch for click/touch event on toggle buttons within the menu.
-					const selectorButton = _.getArg( 'button_selector' );
+					const selectorButton = _.getOption( 'button_selector' );
 					if ( selectorButton ) {
 						menu.querySelectorAll( selectorButton ).forEach( ( button ) => {
 							button.addEventListener( 'mousedown', ( event ) => _.onClick( event ) );
@@ -103,9 +103,9 @@
 					parents = _.getParents( event );
 
 				if ( 'focusin' === event.type ) {
-					parents.map( ( node ) => node.classList.add( _.getArg( 'expanded_class' ) ) );
+					parents.map( ( node ) => node.classList.add( _.getOption( 'expanded_class' ) ) );
 				} else {
-					parents.map( ( node ) => node.classList.remove( _.getArg( 'expanded_class' ) ) );
+					parents.map( ( node ) => node.classList.remove( _.getOption( 'expanded_class' ) ) );
 				}
 
 				// Toggle button attributes.
@@ -122,7 +122,7 @@
 			onClick: function( event ) {
 				const
 					_ = this,
-					classExpanded = _.getArg( 'expanded_class' ),
+					classExpanded = _.getOption( 'expanded_class' ),
 					menuItem      = event.target.parentNode,
 					isExpanded    = menuItem.classList.contains( classExpanded );
 
@@ -154,14 +154,14 @@
 					link     = event.target,
 					menuItem = link.parentNode;
 
-				if ( ! menuItem.classList.contains( _.getArg( 'expanded_class' ) ) ) {
+				if ( ! menuItem.classList.contains( _.getOption( 'expanded_class' ) ) ) {
 					// Touched once, child menu is collapsed - expanded child menu (toggle focus).
 					event.preventDefault();
 					link.focus();
 				} else if ( link !== document.activeElement ) {
 					// Touched once, child menu is expanded - collapse child menu.
 					event.preventDefault();
-					menuItem.classList.remove( _.getArg( 'expanded_class' ) );
+					menuItem.classList.remove( _.getOption( 'expanded_class' ) );
 
 					// Toggle button attributes.
 					_.changeButtonAttributes( event );
@@ -182,7 +182,7 @@
 				if ( 27 === event.keyCode ) {
 					const
 						_ = this,
-						classExpanded = _.getArg( 'expanded_class' );
+						classExpanded = _.getOption( 'expanded_class' );
 
 					_.getContainers().forEach( ( menu ) => {
 						menu.querySelectorAll( '.' + classExpanded ).forEach( ( menuItem ) => {
@@ -205,7 +205,7 @@
 			getContainers: function() {
 				const
 					_ = this,
-					selector = _.getArg( 'menu_selector' );
+					selector = _.getOption( 'menu_selector' );
 
 				if ( ! _.menus.length && selector ) {
 					document.querySelectorAll( selector ).forEach( ( menu ) => _.menus.push( menu ) );
@@ -226,9 +226,9 @@
 					siblings = [],
 					sibling  = node.parentNode.firstChild;
 
-				// Iterate over all siblings, but return only valid nodes.
-				for (; sibling; sibling = sibling.nextSibling ) {
-					if ( ! sibling.matches( selector ) || node === sibling ) {
+				// Iterate over all siblings, but return valid nodes only.
+				for (; sibling; sibling = sibling.nextElementSibling ) {
+					if ( 1 !== sibling.nodeType || ! sibling.matches( selector ) || node === sibling ) {
 						continue;
 					}
 					siblings.push( sibling );
@@ -350,7 +350,7 @@
 				let button;
 
 				if ( null != menuItem ) {
-					button = menuItem.querySelector( _.getArg( 'button_selector' ) );
+					button = menuItem.querySelector( _.getOption( 'button_selector' ) );
 				}
 
 				// Don't bother if no button.
@@ -359,11 +359,11 @@
 				}
 
 				const
-					isExpanded  = menuItem.classList.contains( _.getArg( 'expanded_class' ) ),
-					buttonLabel = _.getArg( 'button_attributes', 'aria-label' );
+					isExpanded  = menuItem.classList.contains( _.getOption( 'expanded_class' ) ),
+					buttonLabel = _.getOption( 'button_attributes', 'aria-label' );
 
 				// Change `aria-label` value dynamically, if we should.
-				if ( null != buttonLabel && 'object' === typeof buttonLabel ) {
+				if ( 'string' !== typeof buttonLabel && null != buttonLabel ) {
 					if ( isExpanded && null != buttonLabel.collapse ) {
 						// Sub menu is open, label the button as ready for collapse.
 						button.setAttribute( 'aria-label', buttonLabel.collapse );
@@ -380,16 +380,16 @@
 		// Options
 
 			/**
-			 * Sets options (overrides their default values).
+			 * Sets options.
 			 *
-			 * @param  {Object} options  Configuration options to process into arguments.
+			 * @param  {Object} config  Optional configuration options.
 			 *
 			 * @return  {Void}
 			 */
-			setArgs: function( options ) {
+			setOptions: function( config ) {
 				const
 					_ = this,
-					args = {
+					options = {
 					// Setting default values.
 						// {Object/empty} Empty value bypasses the button creation.
 						'button_attributes': {
@@ -412,44 +412,48 @@
 					};
 
 				// If we have a custom option, override the default value.
-				for ( let id in options ) {
-					if ( args.hasOwnProperty( id ) ) {
+				for ( let id in config ) {
+					if ( options.hasOwnProperty( id ) ) {
 						// Make sure to sanitize a class name.
 						if ( 'expanded_class' === id ) {
-							args[ id ] = options[ id ].replace( /[^a-zA-Z0-9\-_]/g, '' );
+							options[ id ] = config[ id ].replace( /[^a-zA-Z0-9\-_]/g, '' );
 						} else {
-							args[ id ] = options[ id ];
+							options[ id ] = config[ id ];
 						}
 					}
 				}
 
-				// Set actual arguments.
-				_.args = args;
+				// Set actual options.
+				_.options = options;
 
 				// Also preset the array of menu containers.
 				_.menus = [];
 			},
 
 			/**
-			 * Get an argument value.
+			 * Get an option value.
 			 *
-			 * @param  {String} label  Argument label(s). Multiple ones for a nested level(s).
+			 * A function argument stand for an option label to retrieve the value for.
+			 * Multiple function arguments (labels) dive deep into options object hierarchy.
+			 * No function argument (label) provided returns the whole options object.
 			 *
 			 * @return  {Mixed}
 			 */
-			getArg: function() {
-				let value = this.args;
+			getOption: function() {
+				let val = this.options;
+				const
+					args    = arguments,
+					argsLen = args.length;
 
-				// Iterate through each label specified with function arguments.
-				for ( let i = 0, max = arguments.length; i < max; i++ ) {
-					if ( value.hasOwnProperty( arguments[ i ] ) ) {
-						value = value[ arguments[ i ] ];
-					} else {
-						value = false;
+				if ( 1 === argsLen ) {
+					val = ( null != val[ args[0] ] ) ? ( val[ args[0] ] ) : ( false );
+				} else {
+					for ( let i = 0; i < argsLen; i++ ) {
+						val = ( null != val[ args[ i ] ] ) ? ( val[ args[ i ] ] ) : ( false );
 					}
 				}
 
-				return value;
+				return val;
 			},
 
 		// Polyfills
