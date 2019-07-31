@@ -1,32 +1,32 @@
 # A11y Menu
 
 A keyboard accessible navigational menu script.
-@todo
+
+Transforms your inaccessible website navigational menu into a keyboard accessible one:
+
+- Toggles a sub menu(*) when a menu item receives focus using `TAB` key,
+- Adds a sub menu toggle button,
+- Touching a menu item link once toggles a sub menu(*),
+- Closes all sub menus(*) when `ESC` key pressed.
+
+(*) Well, this should be done with your CSS styles. All the script is actually doing is toggling a `has-expanded-sub-menu` class (configurable) on menu items and setting & toggling proper ARIA attributes where needed.
 
 
-## Configurating options
+## Documentation
 
-Takes an `a11yMenuConfig` global object as a parameter to configure
-and override the default options. Useful for configuration in content
-management systems, such as when using `wp_localize_script()` in WordPress.
-
-Default values for the config object:
-
-	@todo
-
-
-## Styling note
-
-Do not hide child menus with `display: block` CSS styles. Doing so would
-render the links within the child menu inaccessible, not focusable. Use
-accessible styles to hide instead, such as `transform: scale(0);`
+Please check out the project [wiki pages](https://github.com/webmandesign/a11y-menu/wiki) for instructions on how to use the script.
 
 
 ## Browser compatibility
 
-IE11, Edge and all modern web browsers.
+All modern web browsers, back to Edge and IE11.
 
 
 ## Included polyfills
 
-Includes a polyfill for NodeList.forEach() and Element.matches().
+The script includes a polyfill for [`NodeList.forEach()`](https://developer.mozilla.org/en-US/docs/Web/API/NodeList/forEach#Polyfill) and [`Element.matches()`](https://developer.mozilla.org/en-US/docs/Web/API/Element/matches#Polyfill).
+
+
+## License
+
+[GPL-3.0-or-later](https://www.gnu.org/licenses/gpl-3.0-standalone.html)
