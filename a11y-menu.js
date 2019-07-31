@@ -29,16 +29,16 @@
 				// Set options first.
 				_.setOptions( options );
 
-				// Load required polyfills first (already used in getContainers()).
+				// Load required polyfills first (already used in getMenus()).
 				_.polyfill();
 
 				// No point if there is no menu to process.
-				if ( ! _.getContainers().length || ! _.getOption( 'expanded_class' ) ) {
+				if ( ! _.getMenus().length || ! _.getOption( 'expanded_class' ) ) {
 					return;
 				}
 
 				// Iterate over each menu.
-				_.getContainers().forEach( ( menu ) => {
+				_.getMenus().forEach( ( menu ) => {
 
 					// Get child menus.
 					const childMenus = menu.querySelectorAll( _.getOption( 'child_menu_selector' ) );
@@ -183,7 +183,7 @@
 						_ = this,
 						classExpanded = _.getOption( 'expanded_class' );
 
-					_.getContainers().forEach( ( menu ) => {
+					_.getMenus().forEach( ( menu ) => {
 						menu.querySelectorAll( '.' + classExpanded ).forEach( ( menuItem ) => {
 							menuItem.classList.remove( classExpanded );
 
@@ -201,7 +201,7 @@
 			 *
 			 * @return  {Object} Array of menu container nodes, or an empty array.
 			 */
-			getContainers: function() {
+			getMenus: function() {
 				const
 					_ = this,
 					selector = _.getOption( 'menu_selector' );
@@ -253,7 +253,7 @@
 					parents = eventOrNode.path;
 
 					// We don't need parents outside our menu container.
-					const menus = _.getContainers();
+					const menus = _.getMenus();
 					let spliceId;
 					for ( let i = 0, max = menus.length; i < max; i++ ) {
 						spliceId = parents.indexOf( menus[ i ] );
@@ -271,7 +271,7 @@
 
 					// Unfortunately, we need to iterate through DOM,
 					// but we don't need parents outside the menu container.
-					const menus = _.getContainers();
+					const menus = _.getMenus();
 					while ( -1 === menus.indexOf( node ) ) {
 						parents.push( node );
 						node = node.parentNode;
