@@ -1,14 +1,14 @@
 /**
  * @package      A11y Menu
  * @description  A keyboard accessible navigational menu script.
- * @version      0.0.9
+ * @version      1.0.0
  * @author       WebMan Design, Oliver Juhas, https://www.webmandesign.eu
  * @copyright    2019 WebMan Design, Oliver Juhas
  * @license      GPL-3.0-or-later, https://www.gnu.org/licenses/gpl-3.0-standalone.html
  * @link         https://github.com/webmandesign/a11y-menu
+ *
+ * @global  window, document, a11yMenuConfig
  */
-
-/* global window, document, a11yMenuConfig */
 
 ( function( options ) {
 
@@ -53,37 +53,43 @@
 
 					// Iterate over each child menu in the menu.
 					childMenus.forEach( ( childMenu ) => {
-						const
-							menuItem    = childMenu.parentNode,
-							childButton = button.cloneNode( true );
+
+						// Get the parent menu item.
+						const menuItem = childMenu.parentNode;
 
 						// Set `aria-haspopup` to indicate we have a child menu within the menu item.
 						menuItem.setAttribute( 'aria-haspopup', 'true' );
 
-						// Prepend child menu with toggle button.
-						menuItem.insertBefore( childButton, childMenu );
-
-						// Watch for touch event on a link within.
-						const link = menuItem.querySelector( 'a[href]' );
-						if ( null != link ) {
-							link.addEventListener( 'touchstart', ( event ) => _.onTouch( event ), true );
+						if ( null != button ) {
+							// Prepend child menu with toggle button.
+							const childButton = button.cloneNode( true );
+							menuItem.insertBefore( childButton, childMenu );
+							// Simulating `click` event.
+							// Can't actually use `click` as it triggers focus/blur first, messing things up.
+							childButton.addEventListener( 'mousedown', ( event ) => _.onClickButton( event ) );
+							childButton.addEventListener( 'keyup',     ( event ) => _.onClickButton( event ) );
 						}
+
+						if ( _.isMode( 'touch' ) ) {
+							// Watch for touch event on a link within.
+							const link = menuItem.querySelector( 'a[href]' );
+							if ( null != link ) {
+								link.addEventListener( 'touchstart', ( event ) => _.onTouchLink( event ), true );
+							}
+						}
+
 					} );
 
-					// Watch for focus events within the menu, but don't bubble up.
-					menu.addEventListener( 'focusin', ( event ) => _.onFocus( event ), true );
-					menu.addEventListener( 'focusout', ( event ) => _.onFocus( event ), true );
-
-					// Watch for click/touch event on toggle buttons within the menu.
-					const selectorButton = _.getOption( 'button_selector' );
-					if ( selectorButton ) {
-						menu.querySelectorAll( selectorButton ).forEach( ( button ) => {
-							button.addEventListener( 'mousedown', ( event ) => _.onClick( event ) );
-						} );
+					if ( _.isMode( 'tab' ) ) {
+						// Watch for focus events within the menu, but don't bubble up.
+						menu.addEventListener( 'focusin',  ( event ) => _.onFocus( event ), true );
+						menu.addEventListener( 'focusout', ( event ) => _.onFocus( event ), true );
 					}
 
-					// Watch for keydown event (checking for ESC key).
-					document.addEventListener( 'keydown', ( event ) => _.onKeydown( event ) );
+					if ( _.isMode( 'esc' ) ) {
+						// Watch for keydown event (checking for ESC key).
+						document.addEventListener( 'keyup', ( event ) => _.onKeyESC( event ) );
+					}
 
 				} );
 			},
@@ -108,27 +114,37 @@
 					parents.map( ( menuItem ) => menuItem.classList.remove( _.getOption( 'expanded_class' ) ) );
 				}
 
-				// Toggle button attributes.
-				_.changeButtonAttributes( event );
-				parents.map( ( menuItem ) => _.changeButtonAttributes( menuItem ) );
+				if ( _.isMode( 'button' ) ) {
+					// Toggle button attributes.
+					_.changeButtonAttributes( event );
+					parents.map( ( menuItem ) => _.changeButtonAttributes( menuItem ) );
+				}
 			},
 
 			/**
 			 * Action on click/touch event on the toggle button.
 			 *
+			 * No need to check for mode as this has already been done.
+			 *
 			 * @param  {Event} event
 			 *
 			 * @return  {Void}
 			 */
-			onClick: function( event ) {
+			onClickButton: function( event ) {
+				// No point if key pressed and is not enter or spacebar.
+				if ( 'keyup' === event.type && -1 === [ 13, 32 ].indexOf( event.keyCode ) ) {
+					return false;
+				}
+
 				const
 					_ = this,
 					classExpanded = _.getOption( 'expanded_class' ),
-					menuItem      = event.target.parentNode,
-					isExpanded    = menuItem.classList.contains( classExpanded );
+					button        = event.target,
+					menuItem      = button.parentNode,
+					isExpanded    = menuItem.classList.contains( classExpanded ),
+					siblings      = _.getSiblings( menuItem );
 
 				// Remove the class from siblings.
-				let siblings = _.getSiblings( menuItem );
 				siblings.map( ( sibling ) => sibling.classList.remove( classExpanded ) );
 
 				// Toggle the class on direct parent menu item only.
@@ -140,6 +156,11 @@
 
 				// Toggle button attributes.
 				_.changeButtonAttributes( event );
+				siblings.map( ( menuItem ) => _.changeButtonAttributes( menuItem ) );
+				_.getParents( menuItem ).map( ( menuItem ) => _.changeButtonAttributes( menuItem ) );
+
+				// Fixing issue with focus and blur events.
+				event.preventDefault();
 			},
 
 			/**
@@ -149,23 +170,39 @@
 			 *
 			 * @return  {Void}
 			 */
-			onTouch: function( event ) {
+			onTouchLink: function( event ) {
 				const
 					_ = this,
-					link     = event.target,
-					menuItem = link.parentNode;
+					link          = event.target,
+					menuItem      = link.parentNode,
+					classExpanded = _.getOption( 'expanded_class' );
 
-				if ( ! menuItem.classList.contains( _.getOption( 'expanded_class' ) ) ) {
-					// Touched once, child menu is collapsed - expanded child menu (toggle focus).
+				if ( ! menuItem.classList.contains( classExpanded ) ) {
+					// Touched once, child menu is collapsed - expanded child menu.
 					event.preventDefault();
 					link.focus();
+
+					const
+						siblings = _.getSiblings( menuItem ),
+						parents  = _.getParents( event );
+
+					siblings.map( ( sibling ) => sibling.classList.remove( classExpanded ) );
+					parents.map( ( menuItem ) => menuItem.classList.add( classExpanded ) );
+
+					if ( _.isMode( 'button' ) ) {
+						// Toggle button attributes.
+						_.changeButtonAttributes( event );
+						parents.map( ( menuItem ) => _.changeButtonAttributes( menuItem ) );
+					}
 				} else if ( link !== document.activeElement ) {
 					// Touched once, child menu is expanded - collapse child menu.
 					event.preventDefault();
-					menuItem.classList.remove( _.getOption( 'expanded_class' ) );
+					menuItem.classList.remove( classExpanded );
 
-					// Toggle button attributes.
-					_.changeButtonAttributes( event );
+					if ( _.isMode( 'button' ) ) {
+						// Toggle button attributes.
+						_.changeButtonAttributes( event );
+					}
 				}
 			},
 
@@ -176,8 +213,7 @@
 			 *
 			 * @return  {Void}
 			 */
-			onKeydown: function( event ) {
-				// ESC key.
+			onKeyESC: function( event ) {
 				if ( 27 === event.keyCode ) {
 					const
 						_ = this,
@@ -187,8 +223,10 @@
 						menu.querySelectorAll( '.' + classExpanded ).forEach( ( menuItem ) => {
 							menuItem.classList.remove( classExpanded );
 
-							// Toggle button attributes.
-							_.changeButtonAttributes( menuItem );
+							if ( _.isMode( 'button' ) ) {
+								// Toggle button attributes.
+								_.changeButtonAttributes( menuItem );
+							}
 						} );
 					} );
 				}
@@ -296,10 +334,10 @@
 			getButton: function( atts ) {
 				atts = atts || {};
 
-				// No button when its attributes are empty.
+				// No button when its attributes are empty or when no button functionality.
 				const attrKeys = Object.keys( atts );
-				if ( ! attrKeys.length ) {
-					return;
+				if ( ! attrKeys.length || ! this.isMode( 'button' ) ) {
+					return null;
 				}
 
 				// Create a button element and set allowed attributes.
@@ -349,7 +387,7 @@
 				let button;
 
 				if ( null != menuItem ) {
-					button = menuItem.querySelector( _.getOption( 'button_selector' ) );
+					button = menuItem.querySelector( 'button[aria-expanded]' );
 				}
 
 				// Don't bother if no button.
@@ -390,7 +428,7 @@
 					_ = this,
 					options = {
 					// Setting default values.
-						// {Object/empty} Empty value bypasses the button creation.
+						// {Object} Object of attribute name and value pairs for created toggle button.
 						'button_attributes': {
 							// {String} Default button class.
 							'class': 'button-toggle-sub-menu',
@@ -400,14 +438,14 @@
 								'expand': 'Expand child menu',
 							},
 						},
-						// {String} Button element in the menu to watch. Empty value bypasses the button functionality.
-						'button_selector': 'button[aria-expanded]',
-						// {String} Required. No child menu bypasses the functionality for a specific menu only.
+						// {String} Required child menu selector.
 						'child_menu_selector': '.sub-menu',
-						// {String/empty} Required. Empty value bypasses the whole functionality.
+						// {String} Required sub menu toggle class.
 						'expanded_class': 'has-expanded-sub-menu',
-						// {String} Required. No menu(s) bypasses the whole functionality.
+						// {String} Required navigational menu container(s) selector.
 						'menu_selector': 'nav .menu',
+						// {Array} Array of enabled functionality modes.
+						'mode': [ 'tab', 'esc', 'button', 'touch' ],
 					};
 
 				// If we have a custom option, override the default value.
@@ -453,6 +491,21 @@
 				}
 
 				return val;
+			},
+
+			/**
+			 * Check the enabled functionality mode.
+			 *
+			 * @return  {Boolean}
+			 */
+			isMode: function( mode ) {
+				const modes = this.getOption( 'mode' );
+
+				if ( -1 !== modes.indexOf( mode ) ) {
+					return true;
+				} else {
+					return false;
+				}
 			},
 
 		// Polyfills
