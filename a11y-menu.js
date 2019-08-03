@@ -1,7 +1,7 @@
 /**
  * @package      A11y Menu
  * @description  A keyboard accessible navigational menu script.
- * @version      0.0.9
+ * @version      1.0.0
  * @author       WebMan Design, Oliver Juhas, https://www.webmandesign.eu
  * @copyright    2019 WebMan Design, Oliver Juhas
  * @license      GPL-3.0-or-later, https://www.gnu.org/licenses/gpl-3.0-standalone.html
@@ -32,7 +32,7 @@
 				// Load required polyfills first (already used in getMenus()).
 				_.polyfill();
 
-				// No point if there is no menu to process.
+				// No point if there is no menu to process or we have no class to apply.
 				if ( ! _.getMenus().length || ! _.getOption( 'expanded_class' ) ) {
 					return;
 				}
@@ -115,8 +115,9 @@
 				}
 
 				if ( _.isMode( 'button' ) ) {
-					// Toggle button attributes.
+					// Toggle button attributes for this menu item.
 					_.changeButtonAttributes( event );
+					// Toggle button attributes for parents.
 					parents.map( ( menuItem ) => _.changeButtonAttributes( menuItem ) );
 				}
 			},
@@ -139,13 +140,16 @@
 				const
 					_ = this,
 					classExpanded = _.getOption( 'expanded_class' ),
-					button        = event.target,
-					menuItem      = button.parentNode,
-					isExpanded    = menuItem.classList.contains( classExpanded ),
-					siblings      = _.getSiblings( menuItem );
+					menuItem      = event.target.parentNode,
+					isExpanded    = menuItem.classList.contains( classExpanded );
 
-				// Remove the class from siblings.
-				siblings.map( ( sibling ) => sibling.classList.remove( classExpanded ) );
+				// Let's treat siblings first.
+				_.getSiblings( menuItem ).map( ( sibling ) => {
+					// Remove the class from siblings.
+					sibling.classList.remove( classExpanded );
+					// Toggle button attributes for siblings.
+					_.changeButtonAttributes( sibling )
+				} );
 
 				// Toggle the class on direct parent menu item only.
 				if ( isExpanded ) {
@@ -154,10 +158,10 @@
 					menuItem.classList.add( classExpanded );
 				}
 
-				// Toggle button attributes.
+				// Toggle button attributes for this menu item.
 				_.changeButtonAttributes( event );
-				siblings.map( ( menuItem ) => _.changeButtonAttributes( menuItem ) );
-				_.getParents( menuItem ).map( ( menuItem ) => _.changeButtonAttributes( menuItem ) );
+				// Toggle button attributes for parents.
+				_.getParents( menuItem ).map( ( parent ) => _.changeButtonAttributes( parent ) );
 
 				// Fixing issue with focus and blur events.
 				event.preventDefault();
@@ -179,6 +183,7 @@
 
 				if ( ! menuItem.classList.contains( classExpanded ) ) {
 					// Touched once, child menu is collapsed - expanded child menu.
+
 					event.preventDefault();
 					link.focus();
 
@@ -190,17 +195,19 @@
 					parents.map( ( menuItem ) => menuItem.classList.add( classExpanded ) );
 
 					if ( _.isMode( 'button' ) ) {
-						// Toggle button attributes.
+						// Toggle button attributes for this menu item.
 						_.changeButtonAttributes( event );
+						// Toggle button attributes for parents.
 						parents.map( ( menuItem ) => _.changeButtonAttributes( menuItem ) );
 					}
 				} else if ( link !== document.activeElement ) {
 					// Touched once, child menu is expanded - collapse child menu.
+
 					event.preventDefault();
 					menuItem.classList.remove( classExpanded );
 
 					if ( _.isMode( 'button' ) ) {
-						// Toggle button attributes.
+						// Toggle button attributes for this menu item.
 						_.changeButtonAttributes( event );
 					}
 				}
@@ -224,7 +231,7 @@
 							menuItem.classList.remove( classExpanded );
 
 							if ( _.isMode( 'button' ) ) {
-								// Toggle button attributes.
+								// Toggle button attributes for this menu item.
 								_.changeButtonAttributes( menuItem );
 							}
 						} );
@@ -265,7 +272,11 @@
 
 				// Iterate over all siblings, but return valid nodes only.
 				for (; sibling; sibling = sibling.nextElementSibling ) {
-					if ( 1 !== sibling.nodeType || ! sibling.matches( selector ) || node === sibling ) {
+					if (
+						1 !== sibling.nodeType
+						|| ! sibling.matches( selector )
+						|| node === sibling
+					) {
 						continue;
 					}
 					siblings.push( sibling );
@@ -283,37 +294,18 @@
 			 * @return  {Object} Array of (filtered) nodes, or an empty array.
 			 */
 			getParents: function( eventOrNode, selector = '[aria-haspopup="true"]' ) {
-				const _ = this;
-				let parents = [];
+				const
+					_ = this,
+					menus = _.getMenus();
 
-				if ( null != eventOrNode.path ) {
-					// Oh great! We have parents set in event.path array.
-					parents = eventOrNode.path;
+				let
+					parents = [],
+					node    = ( 1 === eventOrNode.nodeType ) ? ( eventOrNode ) : ( eventOrNode.target );
 
-					// We don't need parents outside our menu container.
-					const menus = _.getMenus();
-					let spliceId;
-					for ( let i = 0, max = menus.length; i < max; i++ ) {
-						spliceId = parents.indexOf( menus[ i ] );
-						if ( -1 !== spliceId ) {
-							break;
-						}
-					}
-					parents.splice( spliceId );
-
-					// Finally, remove event.target from the array (first node).
-					parents.shift();
-				} else {
-					// Get the actual current node.
-					let node = ( 1 === eventOrNode.nodeType ) ? ( eventOrNode ) : ( eventOrNode.target );
-
-					// Unfortunately, we need to iterate through DOM,
-					// but we don't need parents outside the menu container.
-					const menus = _.getMenus();
-					while ( -1 === menus.indexOf( node ) ) {
-						parents.push( node );
-						node = node.parentNode;
-					}
+				// We don't need parents outside the menu container.
+				while ( -1 === menus.indexOf( node ) ) {
+					parents.push( node );
+					node = node.parentNode;
 				}
 
 				// Remove parents not matching `selector` function attribute.
@@ -335,8 +327,8 @@
 				atts = atts || {};
 
 				// No button when its attributes are empty or when no button functionality.
-				const attrKeys = Object.keys( atts );
-				if ( ! attrKeys.length || ! this.isMode( 'button' ) ) {
+				const attKeys = Object.keys( atts );
+				if ( ! attKeys.length || ! this.isMode( 'button' ) ) {
 					return null;
 				}
 
@@ -353,7 +345,7 @@
 				button.setAttribute( 'aria-expanded', 'false' );
 
 				// Set allowed attributes only.
-				attrKeys.forEach( ( name ) => {
+				attKeys.forEach( ( name ) => {
 					if (
 						-1 !== allowedAtts.indexOf( name )
 						|| 0 === name.indexOf( 'aria-' )
@@ -402,10 +394,8 @@
 				// Change `aria-label` value dynamically, if we should.
 				if ( 'string' !== typeof buttonLabel && null != buttonLabel ) {
 					if ( isExpanded && null != buttonLabel.collapse ) {
-						// Sub menu is open, label the button as ready for collapse.
 						button.setAttribute( 'aria-label', buttonLabel.collapse );
 					} else if ( ! isExpanded && null != buttonLabel.expand ) {
-						// Sub menu is closed, label the button as ready for expand.
 						button.setAttribute( 'aria-label', buttonLabel.expand );
 					}
 				}
