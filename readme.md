@@ -12,6 +12,11 @@ Transforms your inaccessible website navigational menu into a keyboard accessibl
 (*) Well, this should be done with your CSS styles. All the script is actually doing is toggling a `has-expanded-sub-menu` class (configurable) on menu items and setting & toggling proper ARIA attributes where needed.
 
 
+## Which file to use?
+
+In your projects, load the `a11y-menu.dist.min.js` file. It is a distribution ready compilled  and minified version of development `a11y-menu.js` file.
+
+
 ## Documentation
 
 Please check out the project [wiki pages](https://github.com/webmandesign/a11y-menu/wiki) for instructions on how to use the script.
