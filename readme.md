@@ -14,7 +14,7 @@ Transforms your inaccessible website navigational menu into a keyboard accessibl
 
 ## Which file to use?
 
-In your projects, load the `a11y-menu.dist.min.js` file. It is a distribution ready compilled  and minified version of development `a11y-menu.js` file.
+In your projects, load the `a11y-menu.dist.min.js` file. It is a distribution ready compiled and minified version of the development `a11y-menu.js` file.
 
 
 ## Documentation
