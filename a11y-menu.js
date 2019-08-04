@@ -1,7 +1,7 @@
 /**
  * @package      A11y Menu
  * @description  A keyboard accessible navigational menu script.
- * @version      1.0.0
+ * @version      1.0.1
  * @author       WebMan Design, Oliver Juhas, https://www.webmandesign.eu
  * @copyright    2019 WebMan Design, Oliver Juhas
  * @license      GPL-3.0-or-later, https://www.gnu.org/licenses/gpl-3.0-standalone.html
@@ -60,18 +60,19 @@
 						// Set `aria-haspopup` to indicate we have a child menu within the menu item.
 						menuItem.setAttribute( 'aria-haspopup', 'true' );
 
+						// Prepend child menu with toggle button. The button mode check is done in getButton().
 						if ( null != button ) {
-							// Prepend child menu with toggle button.
 							const childButton = button.cloneNode( true );
 							menuItem.insertBefore( childButton, childMenu );
-							// Simulating `click` event.
-							// Can't actually use `click` as it triggers focus/blur first, messing things up.
+
+							// Watch for `click` event on the toggle button.
+							// (Can't actually use `click` as it triggers focus/blur first, messing things up.)
 							childButton.addEventListener( 'mousedown', ( event ) => _.onClickButton( event ) );
 							childButton.addEventListener( 'keyup',     ( event ) => _.onClickButton( event ) );
 						}
 
+						// Watch for touch event on a link within.
 						if ( _.isMode( 'touch' ) ) {
-							// Watch for touch event on a link within.
 							const link = menuItem.querySelector( 'a[href]' );
 							if ( null != link ) {
 								link.addEventListener( 'touchstart', ( event ) => _.onTouchLink( event ), true );
@@ -80,14 +81,14 @@
 
 					} );
 
+					// Watch for focus events within the menu, but don't bubble up.
 					if ( _.isMode( 'tab' ) ) {
-						// Watch for focus events within the menu, but don't bubble up.
 						menu.addEventListener( 'focusin',  ( event ) => _.onFocus( event ), true );
 						menu.addEventListener( 'focusout', ( event ) => _.onFocus( event ), true );
 					}
 
+					// Watch for keydown event (checking for ESC key).
 					if ( _.isMode( 'esc' ) ) {
-						// Watch for keydown event (checking for ESC key).
 						document.addEventListener( 'keyup', ( event ) => _.onKeyESC( event ) );
 					}
 
@@ -182,7 +183,7 @@
 					classExpanded = _.getOption( 'expanded_class' );
 
 				if ( ! menuItem.classList.contains( classExpanded ) ) {
-					// Touched once, child menu is collapsed - expanded child menu.
+				// Touched once, child menu is collapsed -> expanded child menu.
 
 					event.preventDefault();
 					link.focus();
@@ -201,7 +202,7 @@
 						parents.map( ( menuItem ) => _.changeButtonAttributes( menuItem ) );
 					}
 				} else if ( link !== document.activeElement ) {
-					// Touched once, child menu is expanded - collapse child menu.
+				// Touched once, child menu is expanded -> collapse child menu.
 
 					event.preventDefault();
 					menuItem.classList.remove( classExpanded );
@@ -261,7 +262,8 @@
 			/**
 			 * Returns an array of sibling nodes (expandable menu items by default).
 			 *
-			 * @param  {node} node  DOM node to get siblings for.
+			 * @param  {node}   node                               DOM node to get siblings for.
+			 * @param  {String} selector='[aria-haspopup="true"]'  Filters siblings by this selector.
 			 *
 			 * @return  {Object} Array of nodes, or an empty array.
 			 */
@@ -288,8 +290,8 @@
 			/**
 			 * Returns an array of matched parent nodes.
 			 *
-			 * @param  {Event/node} eventOrNode  An event object or a DOM node to get parents for.
-			 * @param  {String}     selector     Returned array is filtered to match these nodes only.
+			 * @param  {Event/node} eventOrNode                        An event object or a DOM node to get parents for.
+			 * @param  {String}     selector='[aria-haspopup="true"]'  Filters parents by this selector.
 			 *
 			 * @return  {Object} Array of (filtered) nodes, or an empty array.
 			 */
@@ -475,7 +477,7 @@
 				if ( 1 === argsLen ) {
 					val = ( null != val[ args[0] ] ) ? ( val[ args[0] ] ) : ( false );
 				} else {
-					for ( let i = 0; i < argsLen; i++ ) {
+					for ( let i = 0; i < argsLen && false !== val; i++ ) {
 						val = ( null != val[ args[ i ] ] ) ? ( val[ args[ i ] ] ) : ( false );
 					}
 				}
@@ -486,12 +488,12 @@
 			/**
 			 * Check the enabled functionality mode.
 			 *
+			 * @param  {String} mode  Name of the mode to check for.
+			 *
 			 * @return  {Boolean}
 			 */
 			isMode: function( mode ) {
-				const modes = this.getOption( 'mode' );
-
-				if ( -1 !== modes.indexOf( mode ) ) {
+				if ( -1 !== this.getOption( 'mode' ).indexOf( mode ) ) {
 					return true;
 				} else {
 					return false;
