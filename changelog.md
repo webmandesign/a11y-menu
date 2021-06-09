@@ -1,5 +1,14 @@
 # A11y Menu changelog
 
+## 1.1.0
+
+Released on June 6 2021.
+
+### Updates
+
+- Improving sub-menu toggle button dynamic `aria-label` by replacing `%s` with menu item link's `data-submenu-label` attribute value
+
+
 ## 1.0.1
 
 Released on August 4 2019.
