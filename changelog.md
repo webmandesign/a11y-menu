@@ -1,5 +1,14 @@
 # A11y Menu changelog
 
+## 1.2.0
+
+Released on September 23 2022.
+
+### Fixes
+
+- Removing obsolete `aria-haspopup` attribute
+
+
 ## 1.1.0
 
 Released on June 6 2021.
