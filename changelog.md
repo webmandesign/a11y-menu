@@ -1,5 +1,14 @@
 # A11y Menu changelog
 
+## 1.3.0
+
+Released on April 04 2023.
+
+### Updates
+
+- Allowing using existing sub-menu expand button
+
+
 ## 1.2.0
 
 Released on September 23 2022.
