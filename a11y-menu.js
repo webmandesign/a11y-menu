@@ -1,7 +1,7 @@
 /*!
 @package      A11y Menu
 @description  A keyboard accessible navigational menu script.
-@version      1.3.0
+@version      1.3.1
 @author       WebMan Design, Oliver Juhas, https://www.webmandesign.eu
 @copyright    2019 WebMan Design, Oliver Juhas
 @license      GPL-3.0-or-later, https://www.gnu.org/licenses/gpl-3.0-standalone.html
@@ -268,7 +268,7 @@
 			/**
 			 * Returns an array of sibling nodes (expandable menu items by default).
 			 *
-			 * @param  {node}   node                           DOM node to get siblings for.
+			 * @param  {node}   node                                 DOM node to get siblings for.
 			 * @param  {String} selector='.a11y-menu--has-children'  Filters siblings by this selector.
 			 *
 			 * @return  {Object} Array of nodes, or an empty array.
@@ -296,12 +296,12 @@
 			/**
 			 * Returns an array of matched parent nodes.
 			 *
-			 * @param  {Event/node} eventOrNode                   An event object or a DOM node to get parents for.
-			 * @param  {String}     selector='a11y-menu--has-children'  Filters parents by this selector.
+			 * @param  {Event/node} eventOrNode                          An event object or a DOM node to get parents for.
+			 * @param  {String}     selector='.a11y-menu--has-children'  Filters parents by this selector.
 			 *
 			 * @return  {Object} Array of (filtered) nodes, or an empty array.
 			 */
-			getParents: function( eventOrNode, selector = 'a11y-menu--has-children' ) {
+			getParents: function( eventOrNode, selector = '.a11y-menu--has-children' ) {
 				const
 					_ = this,
 					menus = _.getMenus();
