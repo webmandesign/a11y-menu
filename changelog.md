@@ -1,5 +1,14 @@
 # A11y Menu changelog
 
+## 1.3.1
+
+Released on March 15 2026.
+
+### Fixes
+
+- Selector in `getParents` method
+
+
 ## 1.3.0
 
 Released on April 04 2023.
