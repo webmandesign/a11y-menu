@@ -30,9 +30,6 @@
 				// Set options first.
 				_.setOptions( options );
 
-				// Load required polyfills first (already used in getMenus()).
-				_.polyfill();
-
 				// No point if there is no menu to process or we have no class to apply.
 				if ( ! _.getMenus().length || ! _.getOption( 'expanded_class' ) ) {
 					return;
