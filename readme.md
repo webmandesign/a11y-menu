@@ -1,13 +1,11 @@
 # A11y Menu
 
-A keyboard accessible navigational menu script.
+JavaScript for making a navigation menu keyboard accessible:
 
-Transforms your inaccessible website navigational menu into a keyboard accessible one:
-
-- Toggles a sub menu(*) when a menu item receives focus using `TAB` key,
-- Adds a sub menu toggle button,
-- Touching a menu item link once toggles a sub menu(*),
-- Closes all sub menus(*) when `ESC` key pressed.
+- toggles a sub menu(*) when a parent menu item receives focus using `TAB` key or is hovered,
+- adds a sub menu toggle button,
+- enables touching a parent menu item link once to toggle its sub menu(*),
+- closes last opened sub menu(*) when `ESC` key is pressed.
 
 (*) Well, this should be done with your CSS styles. All the script is actually doing is toggling a `has-expanded-sub-menu` class (configurable) on menu items and setting & toggling proper ARIA attributes where needed.
 
@@ -24,12 +22,7 @@ Please check out the project [wiki pages](https://github.com/webmandesign/a11y-m
 
 ## Browser compatibility
 
-All modern web browsers, back to Edge and IE11.
-
-
-## Included polyfills
-
-The script includes a polyfill for [`NodeList.forEach()`](https://developer.mozilla.org/en-US/docs/Web/API/NodeList/forEach#Polyfill) and [`Element.matches()`](https://developer.mozilla.org/en-US/docs/Web/API/Element/matches#Polyfill).
+All modern web browsers.
 
 
 ## License
@@ -39,4 +32,4 @@ The script includes a polyfill for [`NodeList.forEach()`](https://developer.mozi
 
 ## Copyright
 
-&copy; 2019 WebMan Design, Oliver Juhas, https://www.webmandesign.eu
+&copy; 2019-2026 WebMan Design, Oliver Juhas, https://www.webmandesign.eu

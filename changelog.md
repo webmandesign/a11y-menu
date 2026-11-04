@@ -1,5 +1,17 @@
 # A11y Menu changelog
 
+## 1.4.0, 20261104
+
+### Added
+- `onHover` behavior (and making in compatible with touch devices)
+- Adding `is-a11y-menu` class on menu container
+- Adding `is-a11y-menu-sub-menu-toggle` class on sub-menu toggle button
+
+### Updated
+- ESC key closes last open sub-menu (and moves focus on sub-menu toggle)
+- Removing obsolete polyfills
+
+
 ## 1.3.1
 
 Released on March 15 2026.

@@ -1,7 +1,7 @@
 /*!
 @package      A11y Menu
 @description  A keyboard accessible navigational menu script.
-@version      1.3.1
+@version      1.4.0
 @author       WebMan Design, Oliver Juhas, https://www.webmandesign.eu
 @copyright    2019 WebMan Design, Oliver Juhas
 @license      GPL-3.0-or-later, https://www.gnu.org/licenses/gpl-3.0-standalone.html
@@ -11,6 +11,7 @@
 */
 
 ( function( options ) {
+	'use strict';
 
 	const a11yMenu = {
 
@@ -47,6 +48,9 @@
 					if ( ! Object.keys( childMenus ).length ) {
 						return;
 					}
+
+					// Apply initialization class on menu container.
+					menu.classList.add( 'is-a11y-menu' );
 
 					// Get child menu toggle button from configured attributes object.
 					const button = _.getButton( _.getOption( 'button_attributes' ) );
@@ -87,6 +91,13 @@
 
 					} );
 
+					// Watch for hover events within the menu, but don't bubble up.
+					if ( _.isMode( 'hover' ) ) {
+						menu.addEventListener( 'mouseover', ( event ) => _.onHover( event ), true );
+						menu.addEventListener( 'mouseout',  ( event ) => _.onHover( event ), true );
+						menu.addEventListener( 'touchend',  ( event ) => _.onHover( event ), true );
+					}
+
 					// Watch for focus events within the menu, but don't bubble up.
 					if ( _.isMode( 'tab' ) ) {
 						menu.addEventListener( 'focusin',  ( event ) => _.onFocus( event ), true );
@@ -102,6 +113,79 @@
 			},
 
 		// Events
+
+			/**
+			 * Action on hover event within the menu.
+			 *
+			 * @param  {Event} event
+			 *
+			 * @return  {Void}
+			 */
+			onHover: function( event ) {
+
+				const
+					_ = this,
+					parents      = _.getParents( event ),
+					menu         = event.target.closest( '.is-a11y-menu' ),
+					classTouched = 'is-touched';
+
+				/*
+				 * On touch we want to skip the hover actions, so we need
+				 * to bypass the `mouseover` and `mouseout` events. But
+				 * there is no reliable way of checking for touch instead
+				 * of hover, so we need to improvise here...
+				 *
+				 * 0) During touch, these events are triggered (in order):
+				 *    1. touchstart, touchend,
+				 *    2. mouseover, mouseout,
+				 *    3. mousedown, mouseup.
+				 */
+				if ( 'touchend' === event.type ) {
+
+					/*
+					 * 1) Touch is registered, so set `is-touched` class on the
+					 *    actual menu parent. It is important to use menu parent
+					 *    here, not the `event.target`, as the later one changes
+					 *    with each event!
+					 */
+					menu.classList.add( classTouched );
+
+					/*
+					 * 2) As we are now bypassing `mouseover/mouseout`, we need
+					 *    to remove `is-touched` class on an event following
+					 *    those mouse events, so we set a `mousedown` event here.
+					 */
+					menu.addEventListener( 'mousedown', () => menu.classList.remove( classTouched ) );
+
+					/*
+					 * 3) Of course, do not run hover actions as this is a touch event!
+					 */
+					return;
+
+				} else if ( menu.classList.contains( classTouched ) ) {
+
+					/*
+					 * 4) Well, this seems to have started as a touch event,
+					 *    so do not run hover actions yet. Wait until the touch
+					 *    event marker - the `is-touched` class - is cleared
+					 *    with `mousedown` event!
+					 */
+					return;
+				}
+
+				if ( 'mouseover' === event.type ) {
+					parents.map( ( menuItem ) => menuItem.classList.add( _.getOption( 'expanded_class' ) ) );
+				} else {
+					parents.map( ( menuItem ) => menuItem.classList.remove( _.getOption( 'expanded_class' ) ) );
+				}
+
+				if ( _.isMode( 'button' ) ) {
+					// Toggle button attributes for this menu item.
+					_.changeButtonAttributes( event );
+					// Toggle button attributes for parents.
+					parents.map( ( menuItem ) => _.changeButtonAttributes( menuItem ) );
+				}
+			},
 
 			/**
 			 * Action on focus/blur event within the menu.
@@ -234,14 +318,31 @@
 						classExpanded = _.getOption( 'expanded_class' );
 
 					_.getMenus().forEach( ( menu ) => {
-						menu.querySelectorAll( '.' + classExpanded ).forEach( ( menuItem ) => {
-							menuItem.classList.remove( classExpanded );
+						const allExpanded = menu.querySelectorAll( '.' + classExpanded );
 
-							if ( _.isMode( 'button' ) ) {
+						if ( allExpanded.length ) {
+							const
+								lastExpanded = allExpanded[ allExpanded.length - 1 ],
+								button       = lastExpanded.querySelector( 'button[aria-expanded]' );
+
+							lastExpanded.classList.remove( classExpanded );
+
+							if (
+								_.isMode( 'button' )
+								&& button
+								&& button.checkVisibility()
+							) {
+
 								// Toggle button attributes for this menu item.
-								_.changeButtonAttributes( menuItem );
+								_.changeButtonAttributes( lastExpanded );
+
+								// Move focus to the toggle button.
+								button.focus();
+							} else {
+								// Move focus to parent menu item link.
+								lastExpanded.querySelector( 'a' ).focus();
 							}
-						} );
+						}
 					} );
 				}
 			},
@@ -364,6 +465,9 @@
 					}
 				} );
 
+				// Add script class on the button.
+				button.classList.add( 'is-a11y-menu-sub-menu-toggle' );
+
 				// Preset dynamic `aria-label` attribute.
 				if ( null != atts['aria-label'] && null != atts['aria-label'].expand ) {
 					button.setAttribute( 'aria-label', atts['aria-label'].expand );
@@ -451,7 +555,8 @@
 						// {String} Required navigational menu container(s) selector.
 						'menu_selector': 'nav .menu',
 						// {Array} Array of enabled functionality modes.
-						'mode': [ 'tab', 'esc', 'button', 'touch' ],
+						// (Use either 'tab' or 'button' depends on how you want to open submenus.)
+						'mode': [ 'hover', 'tab', 'button', 'touch', 'esc' ],
 					};
 
 				// If we have a custom option, override the default value.
@@ -511,26 +616,6 @@
 					return true;
 				} else {
 					return false;
-				}
-			},
-
-		// Polyfills
-
-			/**
-			 * Polyfills for NodeList.forEach() and Element.matches().
-			 *
-			 * @return  {Void}
-			 */
-			polyfill: function() {
-				// @see  https://developer.mozilla.org/en-US/docs/Web/API/NodeList/forEach#Polyfill
-				if ( window.NodeList && ! NodeList.prototype.forEach ) {
-					NodeList.prototype.forEach = Array.prototype.forEach;
-				}
-
-				// @see  https://developer.mozilla.org/en-US/docs/Web/API/Element/matches#Polyfill
-				if ( ! Element.prototype.matches ) {
-					Element.prototype.matches = Element.prototype.msMatchesSelector ||
-					                            Element.prototype.webkitMatchesSelector;
 				}
 			},
 
