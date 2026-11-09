@@ -1,7 +1,7 @@
 /*!
 @package      A11y Menu
 @description  A keyboard accessible navigational menu script.
-@version      1.4.0
+@version      1.4.1
 @author       WebMan Design, Oliver Juhas, https://www.webmandesign.eu
 @copyright    2019 WebMan Design, Oliver Juhas
 @license      GPL-3.0-or-later, https://www.gnu.org/licenses/gpl-3.0-standalone.html
@@ -74,15 +74,15 @@
 
 							// Watch for `click` event on the toggle button.
 							// (Can't actually use `click` as it triggers focus/blur first, messing things up.)
-							childButton.addEventListener( 'mousedown', ( event ) => _.onClickButton( event ) );
-							childButton.addEventListener( 'keyup',     ( event ) => _.onClickButton( event ) );
+							[ 'mousedown', 'keyup' ]
+								.forEach( ( eType ) => childButton.addEventListener( eType, ( e ) => _.onClickButton( e ) ) );
 						}
 
-						// Watch for touch event on a link within.
+						// Watch for touch event on a link within, but don't bubble up.
 						if ( _.isMode( 'touch' ) ) {
 							const link = menuItem.querySelector( 'a[href]' );
 							if ( null != link ) {
-								link.addEventListener( 'touchstart', ( event ) => _.onTouchLink( event ), true );
+								link.addEventListener( 'touchstart', ( e ) => _.onTouchLink( e ), true );
 							}
 						}
 
@@ -90,20 +90,19 @@
 
 					// Watch for hover events within the menu, but don't bubble up.
 					if ( _.isMode( 'hover' ) ) {
-						menu.addEventListener( 'mouseover', ( event ) => _.onHover( event ), true );
-						menu.addEventListener( 'mouseout',  ( event ) => _.onHover( event ), true );
-						menu.addEventListener( 'touchend',  ( event ) => _.onHover( event ), true );
+						[ 'mouseover', 'mouseout', 'touchend' ]
+							.forEach( ( eType ) => menu.addEventListener( eType, ( e ) => _.onHover( e ), true ) );
 					}
 
 					// Watch for focus events within the menu, but don't bubble up.
 					if ( _.isMode( 'tab' ) ) {
-						menu.addEventListener( 'focusin',  ( event ) => _.onFocus( event ), true );
-						menu.addEventListener( 'focusout', ( event ) => _.onFocus( event ), true );
+						[ 'focusin', 'focusout' ]
+							.forEach( ( eType ) => menu.addEventListener( eType, ( e ) => _.onFocus( e ), true ) );
 					}
 
 					// Watch for keydown event (checking for ESC key).
 					if ( _.isMode( 'esc' ) ) {
-						document.addEventListener( 'keyup', ( event ) => _.onKeyESC( event ) );
+						document.addEventListener( 'keyup', ( e ) => _.onKeyESC( e ) );
 					}
 
 				} );
@@ -122,7 +121,6 @@
 
 				const
 					_ = this,
-					parents      = _.getParents( event ),
 					menu         = event.target.closest( '.is-a11y-menu' ),
 					classTouched = 'is-touched';
 
@@ -169,6 +167,8 @@
 					 */
 					return;
 				}
+
+				const parents = _.getParents( event );
 
 				if ( 'mouseover' === event.type ) {
 					parents.map( ( menuItem ) => menuItem.classList.add( _.getOption( 'expanded_class' ) ) );

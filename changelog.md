@@ -1,5 +1,11 @@
 # A11y Menu changelog
 
+## 1.4.1, 20261109
+
+### Updated
+- Optimizing code
+
+
 ## 1.4.0, 20261104
 
 ### Added
